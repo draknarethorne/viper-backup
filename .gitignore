@@ -1,0 +1,33 @@
+# Runtime logs and reports
+*.log
+*.Log
+logs/
+state/
+
+# Machine-bound scheduled-task exports (may contain SIDs/logon metadata)
+*.xml
+
+# Local-only configuration, credentials, and generated manifests
+local/
+*.local.psd1
+*.local.json
+*.local.yaml
+*.local.yml
+*.credentials*
+*.secret*
+*.key
+*.pfx
+*.p12
+
+# Temporary and editor files
+*.tmp
+*.bak
+*.swp
+~$*
+.vscode/
+
+# Windows metadata
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+System Volume Information/
