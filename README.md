@@ -6,7 +6,7 @@ Windows backup orchestration for local, network, cloud-synchronized, and
 removable-media data—modernizing years of trusted batch automation without
 sacrificing safety or recoverability.
 
-[🎯 Overview](#-what-is-viper-backup) • [📊 Status](#-project-status) • [🧱 Structure](#-project-structure) • [🚀 Quick Start](#-quick-start) • [🛡️ Safety](docs/SAFETY.md) • [🔍 Audit](docs/BACKUP-AUDIT.md) • [🗺️ Migration](docs/MIGRATION.md)
+[🎯 Overview](#-what-is-viper-backup) • [📊 Status](#-project-status) • [🧱 Structure](#-project-structure) • [🚀 Quick Start](#-quick-start) • [🛡️ Safety](docs/SAFETY.md) • [📝 Logs](docs/LOGGING-AND-RETENTION.md) • [♻️ Restore](docs/RESTORE-VALIDATION.md) • [🔍 Audit](docs/BACKUP-AUDIT.md) • [🗺️ Migration](docs/MIGRATION.md)
 
 ## 🎯 What is viper-backup?
 
@@ -17,9 +17,9 @@ The repository currently contains two layers:
 
 1. **Legacy baseline** — the original batch files remain operational and are the
    scripts used by the existing scheduled task.
-2. **Modern planner** — a PowerShell 5.1-compatible, configuration-driven engine
-   being developed beside the legacy scripts. It is plan-only by default and is
-   not yet connected to Task Scheduler.
+2. **Modern planner** — a tested PowerShell 5.1-compatible,
+   configuration-driven engine beside the legacy scripts. It is plan-only by
+   default and is not connected to Task Scheduler.
 
 ## Safety status
 
@@ -40,6 +40,8 @@ The modern engine is designed to:
 - keep machine-specific plans, logs, manifests, and credentials out of Git
 - generate one run directory containing structured summary and per-job logs
 - avoid one oversized command line by executing each configured job separately
+- prevent overlapping runs with an exclusive state lock
+- run bounded batches with independently captured job outcomes
 
 See [Safety](docs/SAFETY.md), [Audit](docs/BACKUP-AUDIT.md), and
 [Migration](docs/MIGRATION.md).
@@ -52,8 +54,8 @@ See [Safety](docs/SAFETY.md), [Audit](docs/BACKUP-AUDIT.md), and
 | Public repository | ✅ Active | Logs, task exports, local plans, and secrets ignored |
 | Safety and migration docs | ✅ Complete | Audit-backed operating model |
 | VS Code workspace | ✅ Ready | PowerShell, Markdown, Git, and guarded terminal defaults |
-| PowerShell planner | 🚧 In progress | Plan-only default; not connected to Task Scheduler |
-| Automated tests | 🚧 In progress | PowerShell 5.1 + Windows CI target |
+| PowerShell planner | ✅ Ready for parallel validation | Plan-only default; not connected to Task Scheduler |
+| Automated tests | ✅ Active | PowerShell 5.1, safety regressions, and real temporary `/L` fixture |
 | Production cutover | ⏸️ Deferred | Legacy `DoBackup.bat` remains scheduled |
 
 ## 🧱 Project Structure
@@ -130,15 +132,31 @@ Microsoft PowerShell.
 
 ## 🚀 Quick Start
 
-After the engine commit, copy `config/backup-plan.example.psd1` to the ignored
-`local/backup-plan.psd1`, customize it, then run a plan:
+Copy `config/backup-plan.example.psd1` to the ignored
+`local/backup-plan.psd1`, customize destination identity and jobs, validate it,
+then run a plan:
 
 ```powershell
+.\scripts\Test-ViperBackupPlan.ps1 -PlanPath .\local\backup-plan.psd1
 .\scripts\Invoke-ViperBackup.ps1 -PlanPath .\local\backup-plan.psd1
 ```
 
 That command is list-only by default. Execution will require `-Execute`.
 Mirror jobs additionally require `-AllowDelete` and plan-level authorization.
+Use `-MaxParallelJobs` to start bounded batches of independent Robocopy jobs;
+the initial engine waits for the whole active batch before starting another.
+
+### Job modes
+
+| Mode | Destination | Destination-only entries | Best fit |
+| --- | --- | --- | --- |
+| `Update` | Stable | Preserved | Safe default aggregation |
+| `Mirror` | Stable | Deleted | Space-efficient exact image behind dual authorization |
+| `Snapshot` | Timestamped | Not applicable | Small, critical configuration/version sets |
+
+Every invocation writes ignored `summary.json`, `summary.txt`, and one Robocopy
+log per started job under `state/runs/<timestamp>/`. See
+[Logging and Retention](docs/LOGGING-AND-RETENTION.md).
 
 ## Current backup coverage guidance
 
@@ -161,16 +179,17 @@ backup and online-only placeholders are not backed-up file content.
 
 ## Validation policy
 
-Development tests use temporary directories and mocked/fake Robocopy outcomes.
+Development tests use temporary directories, mocked/fake Robocopy outcomes, and
+one real Robocopy `/L` integration fixture that proves no destination is created.
 Until migration reaches an approved parallel-validation phase, do not run the
 modern engine with `-Execute` against production paths and do not change the
 scheduled task.
 
 ## 🧪 Testing and CI
 
-The modern engine is validated with Pester-compatible tests on Windows. Tests
-must use temporary paths and simulated Robocopy outcomes; CI must never access
-real backup volumes or network shares.
+The modern engine is validated with Pester 3.4-compatible tests on Windows.
+Tests use temporary paths; the integration case invokes Robocopy only with `/L`.
+CI never accesses real backup volumes or network shares.
 
 ## 🤝 Contributing
 

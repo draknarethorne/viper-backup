@@ -8,7 +8,7 @@
    skipped and reported.
 4. Update mode does not delete destination-only content.
 5. Mirror mode requires all of:
-   - `Mode = 'Mirror'` on the job
+   - an effective `Mode = 'Mirror'` on the job or inherited defaults
    - `AllowDelete = $true` on the job
    - `-AllowDelete` on the invocation
    - an identity-verified destination
@@ -20,6 +20,8 @@
    online-only content is detected.
 10. The runner never formats drives, changes firmware, modifies cloud pinning,
     or changes Task Scheduler.
+11. One repository-state lock prevents overlapping runs. Parallel work is
+   bounded, and all already-started jobs are waited before a failed batch exits.
 
 ## Why update is the default
 
