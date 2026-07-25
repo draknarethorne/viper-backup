@@ -1,0 +1,25 @@
+{
+  "folders": [
+    {
+      "name": "viper-backup",
+      "path": "."
+    }
+  ],
+  "settings": {
+    "files.exclude": {
+      "**/state": true,
+      "**/local": true,
+      "**/*.[lL][oO][gG]": true
+    },
+    "files.associations": {
+      "*.psd1": "powershell"
+    },
+    "powershell.scriptAnalysis.enable": true,
+    "terminal.integrated.defaultProfile.windows": "PowerShell"
+  },
+  "extensions": {
+    "recommendations": [
+      "ms-vscode.powershell"
+    ]
+  }
+}
