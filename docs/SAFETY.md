@@ -22,6 +22,19 @@
     or changes Task Scheduler.
 11. One repository-state lock prevents overlapping runs. Parallel work is
    bounded, and all already-started jobs are waited before a failed batch exits.
+12. Positive integer stages execute in listed order. A later stage never starts
+   after a required-source, validation, process, or Robocopy failure.
+13. TAKP publication is one-way and excludes `eqclient.ini`; cloud-aware jobs
+   never hydrate content automatically.
+
+Source, destination, and cloud preflight occurs when each stage becomes active.
+This allows acquisition to complete before a disconnected second-copy device is
+reported, without permitting the unavailable later-stage job to start.
+
+Destinations are required by default. Distribution/publication jobs may set
+`DestinationRequired = $false` to report `SkippedDestinationUnavailable` when
+an offline target cannot be reached. A reachable target with the wrong identity
+is never skipped and always fails closed.
 
 ## Why update is the default
 

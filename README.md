@@ -6,7 +6,7 @@ Windows backup orchestration for local, network, cloud-synchronized, and
 removable-media data—modernizing years of trusted batch automation without
 sacrificing safety or recoverability.
 
-[🎯 Overview](#-what-is-viper-backup) • [📊 Status](#-project-status) • [🧱 Structure](#-project-structure) • [🚀 Quick Start](#-quick-start) • [🛡️ Safety](docs/SAFETY.md) • [📝 Logs](docs/LOGGING-AND-RETENTION.md) • [♻️ Restore](docs/RESTORE-VALIDATION.md) • [🔍 Audit](docs/BACKUP-AUDIT.md) • [🗺️ Migration](docs/MIGRATION.md)
+[🎯 Overview](#-what-is-viper-backup) • [📊 Status](#-project-status) • [🧱 Structure](#-project-structure) • [🚀 Quick Start](#-quick-start) • [🧭 Topology](docs/TOPOLOGY-AND-SUITES.md) • [🎮 TAKP](docs/TAKP-SYNC.md) • [☁️ Cloud](docs/CLOUD-SNAPSHOTS.md) • [🛡️ Safety](docs/SAFETY.md) • [📝 Logs](docs/LOGGING-AND-RETENTION.md) • [♻️ Restore](docs/RESTORE-VALIDATION.md) • [🗺️ Migration](docs/MIGRATION.md)
 
 ## 🎯 What is viper-backup?
 
@@ -41,7 +41,7 @@ The modern engine is designed to:
 - generate one run directory containing structured summary and per-job logs
 - avoid one oversized command line by executing each configured job separately
 - prevent overlapping runs with an exclusive state lock
-- run bounded batches with independently captured job outcomes
+- run bounded batches within ordered stages so acquisition can gate second copy
 
 See [Safety](docs/SAFETY.md), [Audit](docs/BACKUP-AUDIT.md), and
 [Migration](docs/MIGRATION.md).
@@ -56,6 +56,7 @@ See [Safety](docs/SAFETY.md), [Audit](docs/BACKUP-AUDIT.md), and
 | VS Code workspace | ✅ Ready | PowerShell, Markdown, Git, and guarded terminal defaults |
 | PowerShell planner | ✅ Ready for parallel validation | Plan-only default; not connected to Task Scheduler |
 | Automated tests | ✅ Active | PowerShell 5.1, safety regressions, and real temporary `/L` fixture |
+| Staged daily suite | ✅ Implemented | Required Stage 1 failures prevent Stage 2 second copy |
 | Production cutover | ⏸️ Deferred | Legacy `DoBackup.bat` remains scheduled |
 
 ## 🧱 Project Structure
@@ -79,6 +80,12 @@ Why this structure?
 - ✅ Engine, plans, tests, documentation, and runtime state stay separate
 - ✅ Public examples contain no personal paths, machine names, or drive serials
 - ✅ Local plans and execution evidence remain private and Git-ignored
+
+`D:\Backup` is the control repository. `D:\Backup_Folders` is a distinct data
+category for selected application/project/game trees. The broader eligible
+`D:` data hub is what ultimately receives a second copy on `K:` and supplies
+large NAS-style distribution collections. See
+[Topology and Backup Suites](docs/TOPOLOGY-AND-SUITES.md).
 
 ## Automation roles
 
@@ -144,7 +151,18 @@ then run a plan:
 That command is list-only by default. Execution will require `-Execute`.
 Mirror jobs additionally require `-AllowDelete` and plan-level authorization.
 Use `-MaxParallelJobs` to start bounded batches of independent Robocopy jobs;
-the initial engine waits for the whole active batch before starting another.
+the engine waits for the whole active batch before starting another. Jobs may
+declare positive integer `Stage` values. A later stage starts only after the
+earlier stage finishes successfully; jobs inside one stage may run in parallel.
+
+Start local reconstruction from the public examples:
+
+- `config/daily-suite.example.psd1` — staged acquisition, cloud snapshot, second copy
+- `config/daily-acquisition.example.psd1` — acquisition only
+- `config/second-copy.example.psd1` — verified `D:` data-hub protection
+- `config/critical-snapshots.example.psd1` — OneDrive/TAKP history
+- `config/takp-sync.example.psd1` — one-way TAKP publication
+- `config/distribution.example.psd1` — NAS-style household replication
 
 ### Job modes
 
@@ -157,6 +175,10 @@ the initial engine waits for the whole active batch before starting another.
 Every invocation writes ignored `summary.json`, `summary.txt`, and one Robocopy
 log per started job under `state/runs/<timestamp>/`. See
 [Logging and Retention](docs/LOGGING-AND-RETENTION.md).
+
+TAKP cross-machine publication is one-way and excludes `eqclient.ini`; the full
+local backup may still retain that file for same-machine recovery. Cloud-aware
+jobs require fully local content and never hydrate placeholders automatically.
 
 ## Current backup coverage guidance
 

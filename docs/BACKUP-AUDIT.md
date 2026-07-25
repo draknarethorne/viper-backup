@@ -30,6 +30,20 @@ OneDrive and Google Drive may provide another copy for synchronized content,
 but synchronization can propagate deletion and cloud placeholders may not hold
 local bytes.
 
+### Clarified `D:` roles
+
+Subsequent operator clarification and script-call analysis established that:
+
+- `D:\Backup` is the automation/control repository used by Task Scheduler;
+- `D:\Backup_Folders` is a selected application/project/game data category;
+- other top-level `D:` categories hold workstation, family, server, archive,
+    media, mobile, music, and setup data;
+- the eligible `D:` data hub—not merely `Backup_Folders`—feeds the broad `K:`
+    second copy and household-machine distribution jobs.
+
+The modern design keeps acquisition, second copy, timestamped snapshots, and
+distribution as distinct roles. See `docs/TOPOLOGY-AND-SUITES.md`.
+
 ## Machine activity baseline
 
 | Tier | Machines | Intended behavior |
@@ -132,6 +146,22 @@ Retention is configurable locally.
 | SSH/GPG keys | Not present in audit | If later present, use encrypted restricted destination |
 | App inventories | Not captured | Export package/application lists as generated evidence |
 | Restore test | Not documented | Perform periodic isolated sample restores |
+
+## Clarified target workflows
+
+- Daily Stage 1: required local acquisition, regular network sources, full
+    local TAKP protection, and selected cloud-aware snapshots.
+- Daily Stage 2: verified `D:` data-hub second copy, evaluated only after Stage
+    1 completes.
+- Weekly/on demand: timestamped small-directory history, TAKP portable-state
+    snapshots, and NAS-style distribution of large non-cloud collections.
+- TAKP publication: one-way from an authoritative machine, with
+    `eqclient.ini` excluded from cross-machine transfer.
+- OneDrive: dedicated cloud-aware job; no placeholder is treated as protected
+    content and no automatic hydration occurs.
+
+Public fictional templates live under `config/`; actual machine/share/volume
+identities remain in ignored local plans.
 
 ## USB script interpretation
 

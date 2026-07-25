@@ -67,6 +67,10 @@ state/                   Ignored run logs/manifests/summaries
 Keep configuration parsing, validation, process invocation, result
 classification, and report rendering separate and testable.
 
+Jobs may use positive integer `Stage` values listed in ascending order. Jobs
+within one stage may run in bounded parallel batches; no later stage may start
+after an earlier required-source, validation, process, or Robocopy failure.
+
 ## Legacy Policy
 
 The scheduled task still runs `DoBackup.bat`. Do not edit legacy scripts or

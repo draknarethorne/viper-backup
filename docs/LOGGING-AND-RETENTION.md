@@ -31,12 +31,18 @@ not interleave output. `MaxParallelJobs` bounds each active batch; the initial
 implementation waits for that batch to finish before starting the next one.
 An exclusive state lock prevents scheduled and manual runs from overlapping.
 
+When jobs declare `Stage`, summaries record the stage for each result. All jobs
+in the active stage complete before the next stage starts. This allows required
+acquisition and snapshots to gate a later second-copy stage without forcing
+independent acquisition jobs to run serially.
+
 ## Status vocabulary
 
 | Status | Meaning |
 | --- | --- |
 | `Disabled` | Job intentionally disabled in the plan |
 | `SkippedUnavailable` | Optional source was offline or absent |
+| `SkippedDestinationUnavailable` | Explicitly optional destination was offline or absent |
 | `Planned` | Robocopy list-only completed without a failure code |
 | `Completed` | Write-capable execution completed without a failure code |
 | `Failed` | Validation, identity, cloud, process, or Robocopy failure |
