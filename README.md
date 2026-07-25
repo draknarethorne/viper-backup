@@ -1,7 +1,17 @@
-# Viper Backup
+# 🐍 viper-backup
 
-Viper Backup preserves and modernizes the Windows backup automation historically
-run from `D:\Backup`.
+## Plan safely • Copy deliberately • Prove recovery
+
+Windows backup orchestration for local, network, cloud-synchronized, and
+removable-media data—modernizing years of trusted batch automation without
+sacrificing safety or recoverability.
+
+[🎯 Overview](#-what-is-viper-backup) • [📊 Status](#-project-status) • [🧱 Structure](#-project-structure) • [🚀 Quick Start](#-quick-start) • [🛡️ Safety](docs/SAFETY.md) • [🔍 Audit](docs/BACKUP-AUDIT.md) • [🗺️ Migration](docs/MIGRATION.md)
+
+## 🎯 What is viper-backup?
+
+`viper-backup` preserves and modernizes the Windows backup automation
+historically run from `D:\Backup`.
 
 The repository currently contains two layers:
 
@@ -33,6 +43,40 @@ The modern engine is designed to:
 
 See [Safety](docs/SAFETY.md), [Audit](docs/BACKUP-AUDIT.md), and
 [Migration](docs/MIGRATION.md).
+
+## 📊 Project Status
+
+| Component | Status | Notes |
+| --- | --- | --- |
+| Legacy baseline | ✅ Preserved | Exact scripts committed as `941b4e5` |
+| Public repository | ✅ Active | Logs, task exports, local plans, and secrets ignored |
+| Safety and migration docs | ✅ Complete | Audit-backed operating model |
+| VS Code workspace | ✅ Ready | PowerShell, Markdown, Git, and guarded terminal defaults |
+| PowerShell planner | 🚧 In progress | Plan-only default; not connected to Task Scheduler |
+| Automated tests | 🚧 In progress | PowerShell 5.1 + Windows CI target |
+| Production cutover | ⏸️ Deferred | Legacy `DoBackup.bat` remains scheduled |
+
+## 🧱 Project Structure
+
+```text
+viper-backup/
+├── .github/                    # CI, Copilot instructions, focused agents
+├── config/                     # Public fictional plan examples
+├── docs/                       # Audit, safety, migration, restore guidance
+├── scripts/                    # User-facing PowerShell entry points
+├── src/PSViperBackup/          # Lightweight PowerShell backup engine
+├── tests/                      # Pester safety and behavior tests
+├── Archive/                    # Historical/rare machine batch scripts
+├── *.bat / *.CMD               # Preserved legacy automation
+└── viper-backup.code-workspace # Configured VS Code workspace
+```
+
+Why this structure?
+
+- ✅ Legacy behavior remains visible and recoverable in Git history
+- ✅ Engine, plans, tests, documentation, and runtime state stay separate
+- ✅ Public examples contain no personal paths, machine names, or drive serials
+- ✅ Local plans and execution evidence remain private and Git-ignored
 
 ## Automation roles
 
@@ -84,7 +128,7 @@ volume serials, user SIDs, or reports containing personal file paths.
 Open `viper-backup.code-workspace` in VS Code. The recommended extension is
 Microsoft PowerShell.
 
-## Modern planner quick start
+## 🚀 Quick Start
 
 After the engine commit, copy `config/backup-plan.example.psd1` to the ignored
 `local/backup-plan.psd1`, customize it, then run a plan:
@@ -121,3 +165,20 @@ Development tests use temporary directories and mocked/fake Robocopy outcomes.
 Until migration reaches an approved parallel-validation phase, do not run the
 modern engine with `-Execute` against production paths and do not change the
 scheduled task.
+
+## 🧪 Testing and CI
+
+The modern engine is validated with Pester-compatible tests on Windows. Tests
+must use temporary paths and simulated Robocopy outcomes; CI must never access
+real backup volumes or network shares.
+
+## 🤝 Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Behavior changes require tests, and any
+write/delete capability requires explicit safety analysis.
+
+## 📜 License
+
+MIT—see [LICENSE](LICENSE).
+
+Built with care for data that cannot be replaced.

@@ -1,7 +1,6 @@
 {
   "folders": [
     {
-      "name": "viper-backup",
       "path": "."
     }
   ],
@@ -11,15 +10,86 @@
       "**/local": true,
       "**/*.[lL][oO][gG]": true
     },
-    "files.associations": {
-      "*.psd1": "powershell"
+    "search.exclude": {
+      "**/state": true,
+      "**/local": true,
+      "**/*.[lL][oO][gG]": true
     },
+    "files.associations": {
+      "*.psd1": "powershell",
+      "*.psm1": "powershell",
+      "*.CMD": "bat"
+    },
+    "git.enabled": true,
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "editor.formatOnSave": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
+    "editor.rulers": [
+      80,
+      120
+    ],
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
     "powershell.scriptAnalysis.enable": true,
-    "terminal.integrated.defaultProfile.windows": "PowerShell"
+    "powershell.cwd": "viper-backup",
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "workbench.colorCustomizations": {
+      "editorRuler.foreground": "#444444"
+    },
+    "chat.tools.terminal.autoApprove": {
+      "cd": true,
+      "pwd": true,
+      "dir": true,
+      "ls": true,
+      "cat": true,
+      "head": true,
+      "tail": true,
+      "grep": true,
+      "findstr": true,
+      "Get-Location": true,
+      "Get-ChildItem": true,
+      "Get-Content": true,
+      "Get-Date": true,
+      "Test-Path": true,
+      "Join-Path": true,
+      "Split-Path": true,
+      "Where-Object": true,
+      "/^Select-[a-z0-9]/i": true,
+      "/^Measure-[a-z0-9]/i": true,
+      "/^Compare-[a-z0-9]/i": true,
+      "/^Format-[a-z0-9]/i": true,
+      "/^Sort-[a-z0-9]/i": true,
+      "/^git(\\s+(-C\\s+\\S+|--no-pager))*\\s+(status|log|show|diff|ls-files|grep|branch)\\b/": true,
+      "robocopy": false,
+      "xcopy": false,
+      "copy": false,
+      "Copy-Item": false,
+      "Move-Item": false,
+      "Remove-Item": false,
+      "del": false,
+      "erase": false,
+      "rm": false,
+      "rmdir": false,
+      "net use": false,
+      "New-ScheduledTask": false,
+      "Register-ScheduledTask": false,
+      "Set-ScheduledTask": false,
+      "Unregister-ScheduledTask": false,
+      "Invoke-Expression": false,
+      "iex": false
+    }
   },
   "extensions": {
     "recommendations": [
-      "ms-vscode.powershell"
+      "ms-vscode.powershell",
+      "davidanson.vscode-markdownlint",
+      "streetsidesoftware.code-spell-checker",
+      "yzhang.markdown-all-in-one",
+      "EditorConfig.EditorConfig",
+      "GitHub.vscode-pull-request-github",
+      "donjayamanne.githistory"
     ]
   }
 }
