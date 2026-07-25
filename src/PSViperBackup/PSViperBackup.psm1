@@ -158,11 +158,13 @@ function Assert-ViperDestinationIdentity {
     [CmdletBinding()]
     param(
         [Parameter(Mandatory = $true)]$Job,
-        [scriptblock]$VolumeResolver = ${function:Get-ViperDestinationVolume}
+        [scriptblock]$VolumeResolver = ${function:Get-ViperDestinationVolume},
+        [switch]$AllowUnavailable
     )
 
     $volume = & $VolumeResolver ([string]$Job.Destination)
     if (-not $volume.Available) {
+        if ($AllowUnavailable) { return $volume }
         throw "Destination for job '$($Job.Name)' is unavailable."
     }
 
@@ -263,6 +265,7 @@ function Test-ViperBackupPlan {
     }
 
     $names = @{}
+    $previousStage = 1
     foreach ($job in $jobs) {
         if ($job -isnot [hashtable]) {
             $errors.Add('Every job must be a hashtable.')
@@ -278,12 +281,23 @@ function Test-ViperBackupPlan {
         $names[[string]$job.Name] = $true
         if (-not $job.ContainsKey('Source') -or -not $job.Source) { $errors.Add("Job '$($job.Name)' requires Source.") }
         if (-not $job.ContainsKey('Destination') -or -not $job.Destination) { $errors.Add("Job '$($job.Name)' requires Destination.") }
+        $jobStage = 1
+        if ($job.ContainsKey('Stage')) {
+            if (-not [int]::TryParse([string]$job.Stage, [ref]$jobStage) -or $jobStage -lt 1) {
+                $errors.Add("Job '$($job.Name)' Stage must be a positive integer.")
+            }
+        }
+        if ($jobStage -lt $previousStage) {
+            $errors.Add("Job '$($job.Name)' Stage must not be lower than an earlier job Stage.")
+        }
+        $previousStage = [Math]::Max($previousStage, $jobStage)
 
         $mode = if ($job.ContainsKey('Mode') -and $job.Mode) { [string]$job.Mode } else { $defaultMode }
         if ($mode -notin @('Update', 'Mirror', 'Snapshot')) {
             $errors.Add("Job '$($job.Name)' has unsupported Mode '$mode'.")
         }
-        if ($mode -eq 'Mirror') {
+        $enabled = -not $job.ContainsKey('Enabled') -or [bool]$job.Enabled
+        if ($mode -eq 'Mirror' -and $enabled) {
             if (-not $job.ContainsKey('AllowDelete') -or -not $job.AllowDelete) {
                 $errors.Add("Mirror job '$($job.Name)' must set AllowDelete = `$true in its local plan.")
             }
@@ -464,9 +478,10 @@ function Write-ViperRunSummary {
     $lines += ''
     $lines += 'Jobs:'
     foreach ($result in @($Summary.Results)) {
+        $stage = if ($result.PSObject.Properties['Stage'] -and $result.Stage) { $result.Stage } else { 1 }
         $exitCode = if ($result.PSObject.Properties['ExitCode'] -and $null -ne $result.ExitCode) { $result.ExitCode } else { 'n/a' }
         $severity = if ($result.PSObject.Properties['Severity'] -and $result.Severity) { $result.Severity } else { 'n/a' }
-        $lines += "- $($result.Name): $($result.Status) (exit=$exitCode, severity=$severity)"
+        $lines += "- stage $stage - $($result.Name): $($result.Status) (exit=$exitCode, severity=$severity)"
     }
     $lines | Set-Content -LiteralPath $textPath -Encoding UTF8
     return [pscustomobject]@{ Json = $jsonPath; Text = $textPath }
@@ -519,78 +534,96 @@ function Invoke-ViperBackupPlan {
         }
 
         foreach ($sourceJob in @($plan.Jobs)) {
-            if ($sourceJob.ContainsKey('Enabled') -and -not $sourceJob.Enabled) {
-                $results.Add([pscustomobject]@{ Name = $sourceJob.Name; Status = 'Disabled'; ExitCode = $null; Log = $null })
-                continue
-            }
-            $job = @{}
-            foreach ($key in $sourceJob.Keys) { $job[$key] = $sourceJob[$key] }
-            $job.Source = [Environment]::ExpandEnvironmentVariables([string]$job.Source)
-            $job.Destination = [Environment]::ExpandEnvironmentVariables([string]$job.Destination)
-            if (Test-ViperPathOverlap -Source $job.Source -Destination $job.Destination) {
-                throw "Source and destination overlap for job '$($job.Name)'."
-            }
-            if (-not (Test-Path -LiteralPath $job.Source -PathType Container)) {
-                if ($job.ContainsKey('Required') -and $job.Required) { throw "Required source for job '$($job.Name)' is unavailable: $($job.Source)" }
-                $results.Add([pscustomobject]@{ Name = $job.Name; Status = 'SkippedUnavailable'; ExitCode = $null; Log = $null })
-                continue
-            }
-
-            [void](Assert-ViperDestinationIdentity -Job $job -VolumeResolver $VolumeResolver)
-            if ($job.ContainsKey('CloudAware') -and $job.CloudAware) {
-                $hydration = Test-ViperCloudHydration -Path $job.Source
-                if (-not $hydration.Available -or -not $hydration.FullyHydrated) {
-                    throw "Cloud-aware job '$($job.Name)' is unavailable or contains online-only files."
-                }
-            }
-
-            $mode = if ($job.ContainsKey('Mode') -and $job.Mode) { [string]$job.Mode } else { [string]$defaults.Mode }
-            if ($mode -eq 'Snapshot') {
-                $job.ResolvedDestination = Join-Path $job.Destination $runId
-            }
-            else {
-                $job.ResolvedDestination = $job.Destination
-            }
-            $safeName = ([string]$job.Name -replace '[^A-Za-z0-9._-]', '_')
-            $logPath = Join-Path $runPath "$safeName.robocopy.log"
-            $arguments = Get-ViperJobArguments -Job $job -Defaults $defaults -LogPath $logPath -PlanOnly:(-not $Execute)
-            $pending.Enqueue([pscustomobject]@{ Job = $job; Arguments = $arguments; LogPath = $logPath })
+            $jobStage = if ($sourceJob.ContainsKey('Stage') -and $sourceJob.Stage) { [int]$sourceJob.Stage } else { 1 }
+            $pending.Enqueue([pscustomobject]@{ SourceJob = $sourceJob; Stage = $jobStage })
         }
 
         while ($pending.Count -gt 0) {
-            $active = New-Object Collections.Generic.List[object]
-            try {
-                while ($pending.Count -gt 0 -and $active.Count -lt $MaxParallelJobs) {
-                    $item = $pending.Dequeue()
-                    $process = & $ProcessStarter $item.Arguments
-                    $active.Add([pscustomobject]@{ Item = $item; Process = $process })
+            $activeStage = [int]$pending.Peek().Stage
+            $stagePending = New-Object Collections.Queue
+
+            while ($pending.Count -gt 0 -and [int]$pending.Peek().Stage -eq $activeStage) {
+                $descriptor = $pending.Dequeue()
+                $sourceJob = $descriptor.SourceJob
+                if ($sourceJob.ContainsKey('Enabled') -and -not $sourceJob.Enabled) {
+                    $results.Add([pscustomobject]@{ Name = $sourceJob.Name; Stage = $activeStage; Status = 'Disabled'; ExitCode = $null; Log = $null })
+                    continue
                 }
-            }
-            catch {
-                foreach ($started in $active) {
-                    try { $started.Process.WaitForExit() } catch {}
+                $job = @{}
+                foreach ($key in $sourceJob.Keys) { $job[$key] = $sourceJob[$key] }
+                $job.Source = [Environment]::ExpandEnvironmentVariables([string]$job.Source)
+                $job.Destination = [Environment]::ExpandEnvironmentVariables([string]$job.Destination)
+                if (Test-ViperPathOverlap -Source $job.Source -Destination $job.Destination) {
+                    throw "Source and destination overlap for job '$($job.Name)'."
                 }
-                throw
-            }
-            $batchFailures = New-Object Collections.Generic.List[string]
-            foreach ($entry in $active) {
-                $entry.Process.WaitForExit()
-                $classification = Get-RobocopyResult -ExitCode ([int]$entry.Process.ExitCode)
-                $status = if ($classification.Failed) { 'Failed' } elseif ($Execute) { 'Completed' } else { 'Planned' }
-                $results.Add([pscustomobject]@{
-                    Name = $entry.Item.Job.Name
-                    Mode = if ($entry.Item.Job.ContainsKey('Mode') -and $entry.Item.Job.Mode) { $entry.Item.Job.Mode } else { $defaults.Mode }
-                    Status = $status
-                    ExitCode = $classification.ExitCode
-                    Severity = $classification.Severity
-                    Log = $entry.Item.LogPath
-                })
-                if ($classification.Failed) {
-                    $batchFailures.Add("'$($entry.Item.Job.Name)' (exit $($classification.ExitCode))")
+                if (-not (Test-Path -LiteralPath $job.Source -PathType Container)) {
+                    if ($job.ContainsKey('Required') -and $job.Required) { throw "Required source for job '$($job.Name)' is unavailable: $($job.Source)" }
+                    $results.Add([pscustomobject]@{ Name = $job.Name; Stage = $activeStage; Status = 'SkippedUnavailable'; ExitCode = $null; Log = $null })
+                    continue
                 }
+
+                $destinationRequired = -not $job.ContainsKey('DestinationRequired') -or [bool]$job.DestinationRequired
+                $destinationVolume = Assert-ViperDestinationIdentity -Job $job -VolumeResolver $VolumeResolver -AllowUnavailable:(-not $destinationRequired)
+                if (-not $destinationVolume.Available) {
+                    $results.Add([pscustomobject]@{ Name = $job.Name; Stage = $activeStage; Status = 'SkippedDestinationUnavailable'; ExitCode = $null; Log = $null })
+                    continue
+                }
+                if ($job.ContainsKey('CloudAware') -and $job.CloudAware) {
+                    $hydration = Test-ViperCloudHydration -Path $job.Source
+                    if (-not $hydration.Available -or -not $hydration.FullyHydrated) {
+                        throw "Cloud-aware job '$($job.Name)' is unavailable or contains online-only files."
+                    }
+                }
+
+                $mode = if ($job.ContainsKey('Mode') -and $job.Mode) { [string]$job.Mode } else { [string]$defaults.Mode }
+                if ($mode -eq 'Snapshot') {
+                    $job.ResolvedDestination = Join-Path $job.Destination $runId
+                }
+                else {
+                    $job.ResolvedDestination = $job.Destination
+                }
+                $safeName = ([string]$job.Name -replace '[^A-Za-z0-9._-]', '_')
+                $logPath = Join-Path $runPath "$safeName.robocopy.log"
+                $arguments = Get-ViperJobArguments -Job $job -Defaults $defaults -LogPath $logPath -PlanOnly:(-not $Execute)
+                $stagePending.Enqueue([pscustomobject]@{ Job = $job; Stage = $activeStage; Arguments = $arguments; LogPath = $logPath })
             }
-            if ($batchFailures.Count -gt 0) {
-                throw "Robocopy failed for job(s): $($batchFailures -join ', ')."
+
+            while ($stagePending.Count -gt 0) {
+                $active = New-Object Collections.Generic.List[object]
+                try {
+                    while ($stagePending.Count -gt 0 -and $active.Count -lt $MaxParallelJobs) {
+                        $item = $stagePending.Dequeue()
+                        $process = & $ProcessStarter $item.Arguments
+                        $active.Add([pscustomobject]@{ Item = $item; Process = $process })
+                    }
+                }
+                catch {
+                    foreach ($started in $active) {
+                        try { $started.Process.WaitForExit() } catch {}
+                    }
+                    throw
+                }
+                $batchFailures = New-Object Collections.Generic.List[string]
+                foreach ($entry in $active) {
+                    $entry.Process.WaitForExit()
+                    $classification = Get-RobocopyResult -ExitCode ([int]$entry.Process.ExitCode)
+                    $status = if ($classification.Failed) { 'Failed' } elseif ($Execute) { 'Completed' } else { 'Planned' }
+                    $results.Add([pscustomobject]@{
+                        Name = $entry.Item.Job.Name
+                        Stage = $entry.Item.Stage
+                        Mode = if ($entry.Item.Job.ContainsKey('Mode') -and $entry.Item.Job.Mode) { $entry.Item.Job.Mode } else { $defaults.Mode }
+                        Status = $status
+                        ExitCode = $classification.ExitCode
+                        Severity = $classification.Severity
+                        Log = $entry.Item.LogPath
+                    })
+                    if ($classification.Failed) {
+                        $batchFailures.Add("'$($entry.Item.Job.Name)' (exit $($classification.ExitCode))")
+                    }
+                }
+                if ($batchFailures.Count -gt 0) {
+                    throw "Robocopy failed for job(s): $($batchFailures -join ', ')."
+                }
             }
         }
 

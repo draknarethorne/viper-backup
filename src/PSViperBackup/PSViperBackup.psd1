@@ -1,6 +1,6 @@
 @{
     RootModule = 'PSViperBackup.psm1'
-    ModuleVersion = '0.1.0'
+    ModuleVersion = '0.2.0'
     GUID = 'ee28e01d-b53c-4e47-a04f-4d2238f250a8'
     Author = 'Draknaré Thorne'
     CompanyName = 'ViperTech'
