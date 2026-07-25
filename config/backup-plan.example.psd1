@@ -5,6 +5,12 @@
     # Runtime state is local and ignored. Relative paths resolve from repo root.
     StateDirectory = 'state\runs'
 
+    RunRetention = @{
+        AutoTrim = $false
+        KeepLast = 30
+        MaxAgeDays = 90
+    }
+
     Defaults = @{
         Mode = 'Update'
         RetryCount = 1
@@ -24,6 +30,7 @@
                 ExpectedLabel = 'Example Data'
                 # Put a real serial only in ignored local configuration.
                 ExpectedSerial = $null
+                MinFreeGiB = 10
             }
             Mode = 'Update'
             CloudAware = $false

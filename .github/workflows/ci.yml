@@ -1,0 +1,33 @@
+name: Viper Backup CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate module manifest
+        shell: powershell
+        run: Test-ModuleManifest .\src\PSViperBackup\PSViperBackup.psd1 -ErrorAction Stop
+
+      - name: Run safety tests
+        shell: powershell
+        run: .\tests\Run-Tests.ps1
+
+      - name: Verify runtime state is not tracked
+        shell: powershell
+        run: |
+          $tracked = git ls-files local state '*.log' '*.Log' '*.xml'
+          if ($tracked) {
+              throw "Sensitive/runtime files are tracked: $tracked"
+          }
