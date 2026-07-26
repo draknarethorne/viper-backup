@@ -37,6 +37,15 @@ Create ignored `local\backup-plan.psd1` from the legacy call graph:
 - dedicated cloud-aware OneDrive and eventual Google Drive jobs
 - one-way TAKP publication with `eqclient.ini` excluded
 
+Confirmed current-workstation policy as of 2026-07-26:
+
+- protect personal data and reviewed settings, not live `NTUSER.DAT` hives;
+- keep the existing 1:00 AM schedule during migration;
+- rely on configured browser synchronization rather than copying live browser
+  profiles;
+- do not add a separate Personal Vault job;
+- retire absent ST Minecraft, EverQuest VirtualStore, and EQTimer jobs.
+
 Use separate local plans for acquisition, snapshots, second copy,
 distribution, and manual exports. A combined daily plan may use:
 

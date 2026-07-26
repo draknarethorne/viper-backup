@@ -247,6 +247,23 @@ Describe 'Plan-only orchestration with fake processes' {
         (Get-Content -Raw $result.SummaryPath | ConvertFrom-Json).Mode | Should -Be 'PlanOnly'
     }
 
+    It 'classifies an optional source probe exception as unavailable' {
+        $destination = Join-Path $TestDrive 'probe-destination'
+        $state = Join-Path $TestDrive 'probe-state'
+        New-Item -ItemType Directory -Path $destination | Out-Null
+        $planPath = Join-Path $TestDrive 'probe-plan.psd1'
+        $escapedDestination = $destination.Replace("'", "''")
+        $escapedState = $state.Replace("'", "''")
+        "@{ SchemaVersion=1; Name='Probe exception'; StateDirectory='$escapedState'; Jobs=@(@{Name='Offline UNC';Required=`$false;Source='\\offline.invalid\share';Destination='$escapedDestination';DestinationVolume=@{DriveLetter='T';ExpectedLabel='Fixture'}}) }" | Set-Content -LiteralPath $planPath
+        $resolver = { param($destinationPath) [pscustomobject]@{ Kind = 'Local'; Available = $true; DriveLetter = 'T'; Label = 'Fixture'; Serial = 'fixture' } }
+        $sourceResolver = { param($sourcePath) throw 'Simulated network path failure.' }
+        $starter = { throw 'Process starter must not run for an unavailable source.' }
+
+        $result = Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -SourceResolver $sourceResolver -ProcessStarter $starter
+        $result.Results.Count | Should -Be 1
+        $result.Results[0].Status | Should -Be 'SkippedUnavailable'
+    }
+
     It 'fails and records a Robocopy exit code of 8' {
         $source = Join-Path $TestDrive 'failure-source'
         $destination = Join-Path $TestDrive 'failure-destination'

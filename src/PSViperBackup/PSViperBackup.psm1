@@ -495,6 +495,7 @@ function Invoke-ViperBackupPlan {
         [switch]$AllowDelete,
         [ValidateRange(1, 16)][int]$MaxParallelJobs = 1,
         [scriptblock]$VolumeResolver = ${function:Get-ViperDestinationVolume},
+        [scriptblock]$SourceResolver = { param($source) Test-Path -LiteralPath $source -PathType Container -ErrorAction Stop },
         [scriptblock]$ProcessStarter = ${function:Start-ViperRobocopyProcess}
     )
 
@@ -556,7 +557,14 @@ function Invoke-ViperBackupPlan {
                 if (Test-ViperPathOverlap -Source $job.Source -Destination $job.Destination) {
                     throw "Source and destination overlap for job '$($job.Name)'."
                 }
-                if (-not (Test-Path -LiteralPath $job.Source -PathType Container)) {
+                $sourceAvailable = $false
+                try {
+                    $sourceAvailable = [bool](& $SourceResolver $job.Source)
+                }
+                catch {
+                    $sourceAvailable = $false
+                }
+                if (-not $sourceAvailable) {
                     if ($job.ContainsKey('Required') -and $job.Required) { throw "Required source for job '$($job.Name)' is unavailable: $($job.Source)" }
                     $results.Add([pscustomobject]@{ Name = $job.Name; Stage = $activeStage; Status = 'SkippedUnavailable'; ExitCode = $null; Log = $null })
                     continue

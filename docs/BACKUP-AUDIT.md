@@ -68,12 +68,15 @@ still has the same shares.
 
 ## Critical findings
 
-### Completion is not success
+### Completion status remediation
 
-`BACKUP.CMD` does not convert Robocopy exit codes into batch success/failure, and
-`DoBackup.bat` does not aggregate child-script failures. The latest audited run
-contained access-denied, sharing-violation, and missing-path errors while the
-summary log still printed `Backup Complete`.
+The July 26 audited run contained access-denied, sharing-violation, and
+missing-path errors while the summary log still printed `Backup Complete`.
+After that audit, `BACKUP.CMD` was updated to capture every Robocopy exit code
+immediately and preserve an aggregate failure flag. `DoBackup.bat` now emits a
+failed summary and returns a nonzero result when any Robocopy code is 8 or
+higher. Static regression tests cover the contract; the next scheduled run
+must confirm Task Scheduler records the propagated result.
 
 Robocopy codes are bitmasks. Codes 0–7 are nonfatal outcomes; 8 or higher means
 at least one copy failure. A trustworthy runner must capture the code
@@ -102,8 +105,10 @@ local-only volume identifier. Public example plans never contain real serials.
 ### Coverage is broad but incomplete
 
 The current ST and network scripts exclude all `AppData`; key scripts also
-exclude Google Drive and `.vscode`. Selective exceptions cover Minecraft and
-EverQuest, but other local-only state is not represented.
+exclude Google Drive and `.vscode`. The selected recovery scope is personal
+data, so broad profile jobs explicitly exclude live `NTUSER.DAT` registry
+hives. Other local-only application state is represented only through reviewed
+selective exceptions.
 
 Presence-only checks on ST found VS Code user state, Windows Terminal state,
 and browser profiles. This does not mean every profile should be copied live.
@@ -121,15 +126,18 @@ high-value settings paths while retaining the broad `AppData` exclusion:
 
 The calls are source-existence guarded. Browser profiles, cloud-client state,
 and whole `AppData` remain excluded because legacy `/MIR` is not a safe general
-application-state backup mechanism. See `docs/LEGACY-APPDATA-BRIDGE.md`.
+application-state backup mechanism. Confirmed-absent ST Minecraft, EverQuest
+VirtualStore, and EQTimer jobs were retired. See
+`docs/LEGACY-APPDATA-BRIDGE.md`.
 
 ### Cloud sync needs hydration checks
 
-OneDrive is configured on ST. Google Drive was not present at the legacy path at
-audit time and its client was intentionally stopped. A cloud folder can contain
-online-only placeholders. Copying a placeholder does not guarantee recoverable
-content, and a mirror must never treat an unavailable cloud root as an empty
-source.
+OneDrive is configured on ST. A July 26 recursive metadata check found no files
+marked Offline or Recall-on-access in the visible OneDrive tree; the few mixed
+pin-state entries were metadata, shortcuts, and temporary lock files. This is
+strong local-availability evidence, not restore proof. Google Drive was not
+present at the legacy path at audit time. A mirror must never treat an
+unavailable cloud root as an empty source.
 
 ### Logs are runtime evidence, not source
 

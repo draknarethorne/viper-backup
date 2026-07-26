@@ -27,13 +27,16 @@ The repository currently contains two layers:
 > cutover has occurred.
 
 The legacy scripts use `robocopy /MIR`, which can delete destination content.
-They do not validate drive labels or correctly propagate Robocopy failure exit
-codes. Use them only with the same caution as before; do not infer success from
-an ending `Backup Complete` line.
+They still do not validate drive labels and still use deletion-capable `/MIR`.
+The legacy wrapper now captures Robocopy exit codes immediately, treats codes
+8+ as failures, and returns a failed result from `DoBackup.bat`; validate this
+against the next scheduled run before relying on Task Scheduler history alone.
 
 While the legacy task remains active, `DoBackupST.bat` keeps broad `AppData`
 excluded but selectively includes confirmed VS Code user settings, Windows
-Terminal configuration, and Microsoft Office templates. See the
+Terminal configuration, and Microsoft Office templates. The profile mirrors
+also exclude live `NTUSER.DAT` hives because the selected recovery scope is
+personal data rather than full Windows profile state. See the
 [Legacy ST AppData Bridge](docs/LEGACY-APPDATA-BRIDGE.md).
 
 The modern engine is designed to:

@@ -11,7 +11,8 @@ set BACKUP_DEST=D:\Backup_Family\CMIS-957903A-YA
 
 call netuse %BACKUP_SRC% \\cmis-957903a-ya\cdrive$
 
-call backup "\Users" /XD Music /XD AppData /XD "OneDrive" /XD "Google Drive" /XD hp.* 
+REM Personal-data scope excludes live registry hives.
+call backup "\Users" /XD Music AppData "OneDrive" "Google Drive" hp.* /XF NTUSER.DAT*
 REM call backup "\Users" /XD Music /XD AppData /XD hp.*
 
 call netuse %BACKUP_SRC% /d

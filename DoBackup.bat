@@ -1,5 +1,7 @@
 @Echo On
 set BACKUP_ROBO=YES
+set "BACKUP_FAILED="
+set "BACKUP_EXIT=0"
 
 Echo ******************************************************************** >> Backup.Log
 Echo **      Backup Files - %DATE% %TIME%                  **>> Backup.Log
@@ -78,16 +80,29 @@ REM call DoLDrive.bat NoPause
 
 :End
 
+if /I "%BACKUP_FAILED%"=="YES" goto BackupFailed
+set "BACKUP_STATUS=Complete"
+set "BACKUP_EXIT=0"
+goto WriteSummary
+
+:BackupFailed
+set "BACKUP_STATUS=FAILED"
+set "BACKUP_EXIT=1"
+Echo Backup FAILED - review Backup_Details.Log
+
+:WriteSummary
+
 Echo ******************************************************************** >> Backup_Details.Log
-Echo **    Backup Complete - %DATE% %TIME%                  **>> Backup_Details.Log
+Echo **    Backup %BACKUP_STATUS% - %DATE% %TIME%                  **>> Backup_Details.Log
 Echo ******************************************************************** >> Backup_Details.Log
 Echo. >> Backup_Details.Log
 
 @Echo On
 Echo ******************************************************************** >> Backup.Log
-Echo **    Backup Complete - %DATE% %TIME%                  **>> Backup.Log
+Echo **    Backup %BACKUP_STATUS% - %DATE% %TIME%                  **>> Backup.Log
 Echo ******************************************************************** >> Backup.Log
 Echo. >> Backup.Log
 
 if "%1" == "" pause
+exit /b %BACKUP_EXIT%
 

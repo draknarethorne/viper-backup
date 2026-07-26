@@ -11,7 +11,9 @@ set BACKUP_DEST=D:\Backup_Desktop\CMIS-957903A-GT
 
 call netuse %BACKUP_SRC% \\cmis-957903a-gt\cdrive$
 
-call backup "\Users" /XD AppData /XD "My Drive (*" /XD "Google Drive" /XD .vscode 
+REM Personal-data scope excludes live registry hives; one /XD group preserves
+REM all options within BACKUP.CMD's eight forwarded argument slots.
+call backup "\Users" /XD AppData "My Drive (*" "Google Drive" .vscode /XF NTUSER.DAT*
 REM call backup "\Users" /XD Music /XD AppData /XD "OneDrive" /XD "Google Drive" /XD hp.* 
 REM call backup "\Users" /XD Music /XD AppData /XD hp.*
 

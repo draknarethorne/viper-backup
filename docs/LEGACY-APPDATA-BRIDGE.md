@@ -14,11 +14,17 @@ Until the modern PowerShell plans replace the legacy workflow,
 | --- | --- | --- |
 | `%APPDATA%\Code\User` | VS Code settings, keybindings, snippets, tasks, and profiles | `workspaceStorage`, `globalStorage`, `History` |
 | `%LOCALAPPDATA%\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState` | Windows Terminal settings | `state.json` transient window state |
-| `%APPDATA%\Microsoft\Templates` | Custom Microsoft Office templates | Global temporary-file rules still apply |
+| `%APPDATA%\Microsoft\Templates` | Custom Microsoft Office templates | Global temporary-file rules plus Office `~$*` lock files |
 
 Each call is guarded with `if exist`, so a missing application path does not
-create an avoidable Robocopy failure. Existing Minecraft, EverQuest
-VirtualStore, EQTimer, and full `C:\TAKP` coverage remain unchanged.
+create an avoidable Robocopy failure. Confirmed-absent ST Minecraft, EverQuest
+VirtualStore, and EQTimer calls were retired on 2026-07-26. Full `C:\TAKP`
+coverage remains active.
+
+The broad profile calls now exclude `NTUSER.DAT`. The selected recovery scope
+is personal files and reviewed application settings, not a live Windows
+registry-hive or full-system restore. Full profile recovery requires a separate
+VSS/system-image-aware mechanism.
 
 ## Why not remove `/XD AppData`
 
@@ -49,10 +55,11 @@ dedicated cloud-aware plan, not in client AppData.
 
 ## Operational notes
 
-- Close VS Code, Windows Terminal, Office applications, Minecraft, EverQuest,
-  and EQTimer before a manually supervised run when practical.
-- The daily scheduled run may still encounter live files; the legacy wrapper
-  uses `/R:0` and does not reliably aggregate failures.
+- Close VS Code, Windows Terminal, and Office applications before a manually
+  supervised run when practical.
+- The daily scheduled run may still encounter live files. The legacy wrapper
+  uses `/R:0`, captures Robocopy results immediately, and marks codes 8+ as
+  failures.
 - These additions are a temporary safety bridge, not proof of recovery.
 - Confirm files on `D:` and perform an isolated sample restore.
 - The modern plan should ultimately use non-deleting `Update` or timestamped
