@@ -110,6 +110,19 @@ and browser profiles. This does not mean every profile should be copied live.
 The plan should identify restore-worthy data and use application-aware exports
 or quiesced copies where necessary.
 
+### Temporary ST AppData bridge
+
+The active `DoBackupST.bat` now selectively re-enters three confirmed,
+high-value settings paths while retaining the broad `AppData` exclusion:
+
+- VS Code `Code\User`, excluding volatile/extension-owned storage and history
+- Windows Terminal `LocalState`, excluding transient `state.json`
+- Microsoft Office custom templates
+
+The calls are source-existence guarded. Browser profiles, cloud-client state,
+and whole `AppData` remain excluded because legacy `/MIR` is not a safe general
+application-state backup mechanism. See `docs/LEGACY-APPDATA-BRIDGE.md`.
+
 ### Cloud sync needs hydration checks
 
 OneDrive is configured on ST. Google Drive was not present at the legacy path at

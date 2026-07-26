@@ -6,7 +6,7 @@ Windows backup orchestration for local, network, cloud-synchronized, and
 removable-media data—modernizing years of trusted batch automation without
 sacrificing safety or recoverability.
 
-[🎯 Overview](#-what-is-viper-backup) • [📊 Status](#-project-status) • [🧱 Structure](#-project-structure) • [🚀 Quick Start](#-quick-start) • [🧭 Topology](docs/TOPOLOGY-AND-SUITES.md) • [🎮 TAKP](docs/TAKP-SYNC.md) • [☁️ Cloud](docs/CLOUD-SNAPSHOTS.md) • [🛡️ Safety](docs/SAFETY.md) • [📝 Logs](docs/LOGGING-AND-RETENTION.md) • [♻️ Restore](docs/RESTORE-VALIDATION.md) • [🗺️ Migration](docs/MIGRATION.md)
+[🎯 Overview](#-what-is-viper-backup) • [📊 Status](#-project-status) • [🧱 Structure](#-project-structure) • [🚀 Quick Start](#-quick-start) • [🧭 Topology](docs/TOPOLOGY-AND-SUITES.md) • [🎮 TAKP](docs/TAKP-SYNC.md) • [☁️ Cloud](docs/CLOUD-SNAPSHOTS.md) • [🧩 AppData Bridge](docs/LEGACY-APPDATA-BRIDGE.md) • [🛡️ Safety](docs/SAFETY.md) • [♻️ Restore](docs/RESTORE-VALIDATION.md) • [🗺️ Migration](docs/MIGRATION.md)
 
 ## 🎯 What is viper-backup?
 
@@ -30,6 +30,11 @@ The legacy scripts use `robocopy /MIR`, which can delete destination content.
 They do not validate drive labels or correctly propagate Robocopy failure exit
 codes. Use them only with the same caution as before; do not infer success from
 an ending `Backup Complete` line.
+
+While the legacy task remains active, `DoBackupST.bat` keeps broad `AppData`
+excluded but selectively includes confirmed VS Code user settings, Windows
+Terminal configuration, and Microsoft Office templates. See the
+[Legacy ST AppData Bridge](docs/LEGACY-APPDATA-BRIDGE.md).
 
 The modern engine is designed to:
 
