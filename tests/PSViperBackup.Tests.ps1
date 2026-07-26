@@ -1,25 +1,27 @@
+. "$PSScriptRoot\PesterAssertionCompatibility.ps1"
+
 $modulePath = Join-Path $PSScriptRoot '..\src\PSViperBackup\PSViperBackup.psd1'
 Import-Module $modulePath -Force
 
 Describe 'Viper Backup core safety behavior' {
     It 'uses sortable invariant timestamps' {
-        Get-ViperTimestamp -Value ([datetime]'2026-07-25T18:45:30') | Should Be '20260725-184530'
+        Get-ViperTimestamp -Value ([datetime]'2026-07-25T18:45:30') | Should -Be '20260725-184530'
     }
 
     It 'classifies Robocopy codes 0 through 7 as nonfatal' {
         foreach ($code in 0..7) {
-            (Get-RobocopyResult -ExitCode $code).Failed | Should Be $false
+            (Get-RobocopyResult -ExitCode $code).Failed | Should -Be $false
         }
     }
 
     It 'classifies Robocopy codes 8 and above as failures' {
         foreach ($code in @(8, 9, 16, 24)) {
-            (Get-RobocopyResult -ExitCode $code).Failed | Should Be $true
+            (Get-RobocopyResult -ExitCode $code).Failed | Should -Be $true
         }
     }
 
     It 'quotes paths with spaces for Windows process invocation' {
-        ConvertTo-WindowsCommandLineArgument 'C:\Example Data\Backup' | Should Be '"C:\Example Data\Backup"'
+        ConvertTo-WindowsCommandLineArgument 'C:\Example Data\Backup' | Should -Be '"C:\Example Data\Backup"'
     }
 
     It 'requires both mirror delete authorizations' {
@@ -35,10 +37,10 @@ Describe 'Viper Backup core safety behavior' {
                 AllowDelete = $false
             })
         }
-        (Test-ViperBackupPlan -Plan $plan).Valid | Should Be $false
+        (Test-ViperBackupPlan -Plan $plan).Valid | Should -Be $false
         $plan.Jobs[0].AllowDelete = $true
-        (Test-ViperBackupPlan -Plan $plan).Valid | Should Be $false
-        (Test-ViperBackupPlan -Plan $plan -AllowDelete).Valid | Should Be $true
+        (Test-ViperBackupPlan -Plan $plan).Valid | Should -Be $false
+        (Test-ViperBackupPlan -Plan $plan -AllowDelete).Valid | Should -Be $true
     }
 
     It 'requires both delete authorizations for inherited Mirror mode' {
@@ -54,8 +56,8 @@ Describe 'Viper Backup core safety behavior' {
                 AllowDelete = $true
             })
         }
-        (Test-ViperBackupPlan -Plan $plan).Valid | Should Be $false
-        (Test-ViperBackupPlan -Plan $plan -AllowDelete).Valid | Should Be $true
+        (Test-ViperBackupPlan -Plan $plan).Valid | Should -Be $false
+        (Test-ViperBackupPlan -Plan $plan -AllowDelete).Valid | Should -Be $true
     }
 
     It 'allows a disabled Mirror job without deletion authorization' {
@@ -72,14 +74,14 @@ Describe 'Viper Backup core safety behavior' {
                 AllowDelete = $false
             })
         }
-        (Test-ViperBackupPlan -Plan $plan).Valid | Should Be $true
+        (Test-ViperBackupPlan -Plan $plan).Valid | Should -Be $true
     }
 
     It 'reports malformed plan structures without throwing' {
         $plan = @{ Defaults = 'invalid'; Jobs = @('invalid') }
         $result = Test-ViperBackupPlan -Plan $plan
-        $result.Valid | Should Be $false
-        $result.Errors.Count | Should BeGreaterThan 3
+        $result.Valid | Should -Be $false
+        $result.Errors.Count | Should -BeGreaterThan 3
     }
 
     It 'rejects invalid or descending stages' {
@@ -92,12 +94,12 @@ Describe 'Viper Backup core safety behavior' {
                 @{ Name = 'Earlier'; Source = 'C:\Two'; Destination = 'D:\Two'; Stage = 1 }
             )
         }
-        (Test-ViperBackupPlan -Plan $plan).Valid | Should Be $false
+        (Test-ViperBackupPlan -Plan $plan).Valid | Should -Be $false
         $plan.Jobs[1].Stage = 0
-        (Test-ViperBackupPlan -Plan $plan).Valid | Should Be $false
+        (Test-ViperBackupPlan -Plan $plan).Valid | Should -Be $false
         $plan.Jobs[0].Stage = 2
         $plan.Jobs[1].Remove('Stage')
-        (Test-ViperBackupPlan -Plan $plan).Valid | Should Be $false
+        (Test-ViperBackupPlan -Plan $plan).Valid | Should -Be $false
     }
 
     It 'rejects a mismatched destination label' {
@@ -107,7 +109,7 @@ Describe 'Viper Backup core safety behavior' {
             DestinationVolume = @{ DriveLetter = 'D'; ExpectedLabel = 'Expected'; ExpectedSerial = $null }
         }
         $resolver = { param($destination) [pscustomobject]@{ Kind = 'Local'; Available = $true; DriveLetter = 'D'; Label = 'Wrong'; Serial = 'x' } }
-        { Assert-ViperDestinationIdentity -Job $job -VolumeResolver $resolver } | Should Throw
+        { Assert-ViperDestinationIdentity -Job $job -VolumeResolver $resolver } | Should -Throw
     }
 
     It 'accepts a matching destination label' {
@@ -117,7 +119,7 @@ Describe 'Viper Backup core safety behavior' {
             DestinationVolume = @{ DriveLetter = 'D'; ExpectedLabel = 'Expected'; ExpectedSerial = $null }
         }
         $resolver = { param($destination) [pscustomobject]@{ Kind = 'Local'; Available = $true; DriveLetter = 'D'; Label = 'Expected'; Serial = 'x' } }
-        (Assert-ViperDestinationIdentity -Job $job -VolumeResolver $resolver).Label | Should Be 'Expected'
+        (Assert-ViperDestinationIdentity -Job $job -VolumeResolver $resolver).Label | Should -Be 'Expected'
     }
 
     It 'rejects insufficient destination free space' {
@@ -127,14 +129,14 @@ Describe 'Viper Backup core safety behavior' {
             DestinationVolume = @{ DriveLetter = 'D'; ExpectedLabel = 'Expected'; ExpectedSerial = $null; MinFreeGiB = 10 }
         }
         $resolver = { param($destination) [pscustomobject]@{ Kind = 'Local'; Available = $true; DriveLetter = 'D'; Label = 'Expected'; Serial = 'x'; FreeBytes = 1GB } }
-        { Assert-ViperDestinationIdentity -Job $job -VolumeResolver $resolver } | Should Throw
+        { Assert-ViperDestinationIdentity -Job $job -VolumeResolver $resolver } | Should -Throw
     }
 
     It 'rejects nested or identical source and destination paths' {
-        Test-ViperPathOverlap -Source 'C:\Data' -Destination 'C:\Data' | Should Be $true
-        Test-ViperPathOverlap -Source 'C:\Data' -Destination 'C:\Data\Backup' | Should Be $true
-        Test-ViperPathOverlap -Source 'C:\Data\Backup' -Destination 'C:\Data' | Should Be $true
-        Test-ViperPathOverlap -Source 'C:\Data' -Destination 'D:\Backup' | Should Be $false
+        Test-ViperPathOverlap -Source 'C:\Data' -Destination 'C:\Data' | Should -Be $true
+        Test-ViperPathOverlap -Source 'C:\Data' -Destination 'C:\Data\Backup' | Should -Be $true
+        Test-ViperPathOverlap -Source 'C:\Data\Backup' -Destination 'C:\Data' | Should -Be $true
+        Test-ViperPathOverlap -Source 'C:\Data' -Destination 'D:\Backup' | Should -Be $false
     }
 
     It 'adds list-only and avoids mirror flags for Update plans' {
@@ -149,10 +151,10 @@ Describe 'Viper Backup core safety behavior' {
         }
         $defaults = @{ Mode = 'Update'; RetryCount = 1; RetryWaitSeconds = 2; MultiThreadCount = 4 }
         $arguments = Get-ViperJobArguments -Job $job -Defaults $defaults -LogPath 'C:\Logs\job.log' -PlanOnly
-        $arguments -contains '/L' | Should Be $true
-        $arguments -contains '/E' | Should Be $true
-        $arguments -contains '/MIR' | Should Be $false
-        $arguments -contains 'Temp Folder' | Should Be $true
+        $arguments -contains '/L' | Should -Be $true
+        $arguments -contains '/E' | Should -Be $true
+        $arguments -contains '/MIR' | Should -Be $false
+        $arguments -contains 'Temp Folder' | Should -Be $true
     }
 
     It 'detects hydrated ordinary temporary files' {
@@ -160,9 +162,9 @@ Describe 'Viper Backup core safety behavior' {
         New-Item -ItemType Directory -Path $path | Out-Null
         Set-Content -LiteralPath (Join-Path $path 'local.txt') -Value 'fixture'
         $result = Test-ViperCloudHydration -Path $path
-        $result.Available | Should Be $true
-        $result.FullyHydrated | Should Be $true
-        $result.InspectedFiles | Should Be 1
+        $result.Available | Should -Be $true
+        $result.FullyHydrated | Should -Be $true
+        $result.InspectedFiles | Should -Be 1
     }
 }
 
@@ -175,9 +177,9 @@ Describe 'Run-history retention' {
             $item.LastWriteTimeUtc = ([datetime]'2026-01-01').AddDays($index)
         }
         $candidates = @(Get-ViperRetentionCandidates -Path $root -KeepLast 2 -MaxAgeDays 30 -Now ([datetime]'2026-07-25'))
-        $candidates.Count | Should Be 2
-        ($candidates.Name -contains 'run-1') | Should Be $true
-        ($candidates.Name -contains 'run-2') | Should Be $true
+        $candidates.Count | Should -Be 2
+        ($candidates.Name -contains 'run-1') | Should -Be $true
+        ($candidates.Name -contains 'run-2') | Should -Be $true
     }
 
     It 'previews safely, removes only expired history, and rejects outside paths' {
@@ -189,12 +191,12 @@ Describe 'Run-history retention' {
             $newest.LastWriteTimeUtc = [datetime]'2020-01-02T00:00:00Z'
 
             Remove-ViperBackupRunHistory -StateDirectory $fixtureRoot -KeepLast 1 -MaxAgeDays 1 -WhatIf -Confirm:$false
-            Test-Path -LiteralPath $oldest.FullName | Should Be $true
+            Test-Path -LiteralPath $oldest.FullName | Should -Be $true
 
             Remove-ViperBackupRunHistory -StateDirectory $fixtureRoot -KeepLast 1 -MaxAgeDays 1 -Confirm:$false
-            Test-Path -LiteralPath $oldest.FullName | Should Be $false
-            Test-Path -LiteralPath $newest.FullName | Should Be $true
-            { Remove-ViperBackupRunHistory -StateDirectory $TestDrive -Confirm:$false } | Should Throw
+            Test-Path -LiteralPath $oldest.FullName | Should -Be $false
+            Test-Path -LiteralPath $newest.FullName | Should -Be $true
+            { Remove-ViperBackupRunHistory -StateDirectory $TestDrive -Confirm:$false } | Should -Throw
         }
         finally {
             Remove-Item -LiteralPath $fixtureRoot -Recurse -Force -ErrorAction SilentlyContinue
@@ -237,12 +239,12 @@ Describe 'Plan-only orchestration with fake processes' {
         }
 
         $result = Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter
-        ($script:capturedArguments -contains '/L') | Should Be $true
-        ($result.Results | Where-Object Name -eq 'Fixture').Status | Should Be 'Planned'
-        ($result.Results | Where-Object Name -eq 'Offline optional').Status | Should Be 'SkippedUnavailable'
-        Test-Path -LiteralPath $result.SummaryPath | Should Be $true
-        Test-Path -LiteralPath $result.TextSummaryPath | Should Be $true
-        (Get-Content -Raw $result.SummaryPath | ConvertFrom-Json).Mode | Should Be 'PlanOnly'
+        ($script:capturedArguments -contains '/L') | Should -Be $true
+        ($result.Results | Where-Object Name -eq 'Fixture').Status | Should -Be 'Planned'
+        ($result.Results | Where-Object Name -eq 'Offline optional').Status | Should -Be 'SkippedUnavailable'
+        Test-Path -LiteralPath $result.SummaryPath | Should -Be $true
+        Test-Path -LiteralPath $result.TextSummaryPath | Should -Be $true
+        (Get-Content -Raw $result.SummaryPath | ConvertFrom-Json).Mode | Should -Be 'PlanOnly'
     }
 
     It 'fails and records a Robocopy exit code of 8' {
@@ -263,10 +265,10 @@ Describe 'Plan-only orchestration with fake processes' {
             return $process
         }
 
-        { Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter } | Should Throw
+        { Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter } | Should -Throw
         $summaries = @(Get-ChildItem -LiteralPath $state -Filter summary.json -Recurse)
-        $summaries.Count | Should Be 1
-        (Get-Content -Raw $summaries[0].FullName | ConvertFrom-Json).Status | Should Be 'Failed'
+        $summaries.Count | Should -Be 1
+        (Get-Content -Raw $summaries[0].FullName | ConvertFrom-Json).Status | Should -Be 'Failed'
     }
 
     It 'starts a bounded batch of jobs before waiting' {
@@ -293,9 +295,9 @@ Describe 'Plan-only orchestration with fake processes' {
         }.GetNewClosure()
 
         $result = Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter -MaxParallelJobs 2
-        $tracker.Started | Should Be 2
-        $tracker.WaitedTooEarly | Should Be $false
-        @($result.Results | Where-Object Status -eq 'Planned').Count | Should Be 2
+        $tracker.Started | Should -Be 2
+        $tracker.WaitedTooEarly | Should -Be $false
+        @($result.Results | Where-Object Status -eq 'Planned').Count | Should -Be 2
     }
 
     It 'does not start a third same-stage job before the first batch waits' {
@@ -319,8 +321,8 @@ Describe 'Plan-only orchestration with fake processes' {
         }.GetNewClosure()
 
         [void](Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter -MaxParallelJobs 2)
-        $tracker.Started | Should Be 3
-        $tracker.ThirdStartedEarly | Should Be $false
+        $tracker.Started | Should -Be 3
+        $tracker.ThirdStartedEarly | Should -Be $false
     }
 
     It 'waits for an earlier stage before starting the next stage' {
@@ -348,9 +350,9 @@ Describe 'Plan-only orchestration with fake processes' {
         }.GetNewClosure()
 
         $result = Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter -MaxParallelJobs 3
-        $tracker.StageTwoStartedEarly | Should Be $false
-        @($result.Results | Where-Object Stage -eq 1).Count | Should Be 2
-        @($result.Results | Where-Object Stage -eq 2).Count | Should Be 1
+        $tracker.StageTwoStartedEarly | Should -Be $false
+        @($result.Results | Where-Object Stage -eq 1).Count | Should -Be 2
+        @($result.Results | Where-Object Stage -eq 2).Count | Should -Be 1
     }
 
     It 'does not start a later stage after an earlier Robocopy failure' {
@@ -375,8 +377,8 @@ Describe 'Plan-only orchestration with fake processes' {
             return $process
         }.GetNewClosure()
 
-        { Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter -MaxParallelJobs 2 } | Should Throw
-        $tracker.Started | Should Be 1
+        { Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter -MaxParallelJobs 2 } | Should -Throw
+        $tracker.Started | Should -Be 1
     }
 
     It 'completes earlier-stage work before checking a later destination' {
@@ -407,9 +409,9 @@ Describe 'Plan-only orchestration with fake processes' {
             return $process
         }.GetNewClosure()
 
-        { Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter } | Should Throw
-        $tracker.Started | Should Be 1
-        $tracker.Waited | Should Be 1
+        { Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter } | Should -Throw
+        $tracker.Started | Should -Be 1
+        $tracker.Waited | Should -Be 1
     }
 
     It 'starts no same-stage work when any job fails preflight' {
@@ -427,8 +429,8 @@ Describe 'Plan-only orchestration with fake processes' {
         $tracker = [hashtable]::Synchronized(@{ Started = 0 })
         $starter = { param([string[]]$arguments) $tracker.Started++; throw 'Must not start.' }.GetNewClosure()
 
-        { Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter } | Should Throw
-        $tracker.Started | Should Be 0
+        { Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter } | Should -Throw
+        $tracker.Started | Should -Be 0
     }
 
     It 'blocks later stages when a required earlier source is missing' {
@@ -444,8 +446,8 @@ Describe 'Plan-only orchestration with fake processes' {
         $tracker = [hashtable]::Synchronized(@{ Started = 0 })
         $starter = { param([string[]]$arguments) $tracker.Started++; throw 'Must not start.' }.GetNewClosure()
 
-        { Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter } | Should Throw
-        $tracker.Started | Should Be 0
+        { Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter } | Should -Throw
+        $tracker.Started | Should -Be 0
     }
 
     It 'reports disabled Mirror without starting a process' {
@@ -461,8 +463,8 @@ Describe 'Plan-only orchestration with fake processes' {
         $starter = { param([string[]]$arguments) $tracker.Started++; throw 'Must not start.' }.GetNewClosure()
 
         $result = Invoke-ViperBackupPlan -PlanPath $planPath -ProcessStarter $starter
-        $result.Results[0].Status | Should Be 'Disabled'
-        $tracker.Started | Should Be 0
+        $result.Results[0].Status | Should -Be 'Disabled'
+        $tracker.Started | Should -Be 0
     }
 
     It 'skips only explicitly optional unavailable destinations' {
@@ -477,7 +479,7 @@ Describe 'Plan-only orchestration with fake processes' {
         $starter = { param([string[]]$arguments) $tracker.Started++; throw 'Must not start.' }.GetNewClosure()
 
         $result = Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver -ProcessStarter $starter
-        $result.Results[0].Status | Should Be 'SkippedDestinationUnavailable'
-        $tracker.Started | Should Be 0
+        $result.Results[0].Status | Should -Be 'SkippedDestinationUnavailable'
+        $tracker.Started | Should -Be 0
     }
 }

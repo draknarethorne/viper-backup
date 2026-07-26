@@ -1,3 +1,5 @@
+. "$PSScriptRoot\PesterAssertionCompatibility.ps1"
+
 $modulePath = Join-Path $PSScriptRoot '..\src\PSViperBackup\PSViperBackup.psd1'
 Import-Module $modulePath -Force
 
@@ -18,10 +20,10 @@ Describe 'Real Robocopy list-only integration' {
 
         $result = Invoke-ViperBackupPlan -PlanPath $planPath -VolumeResolver $resolver
 
-        Test-Path -LiteralPath $destination | Should Be $false
-        $result.Results[0].Status | Should Be 'Planned'
-        $result.Results[0].ExitCode | Should Be 1
-        Test-Path -LiteralPath $result.Results[0].Log | Should Be $true
-        (Get-Content -Raw $result.SummaryPath | ConvertFrom-Json).Mode | Should Be 'PlanOnly'
+        Test-Path -LiteralPath $destination | Should -Be $false
+        $result.Results[0].Status | Should -Be 'Planned'
+        $result.Results[0].ExitCode | Should -Be 1
+        Test-Path -LiteralPath $result.Results[0].Log | Should -Be $true
+        (Get-Content -Raw $result.SummaryPath | ConvertFrom-Json).Mode | Should -Be 'PlanOnly'
     }
 }
