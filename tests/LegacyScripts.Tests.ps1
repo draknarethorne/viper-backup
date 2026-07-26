@@ -1,13 +1,14 @@
 . "$PSScriptRoot\PesterAssertionCompatibility.ps1"
 
-$root = Split-Path -Parent $PSScriptRoot
-
 Describe 'Legacy ST AppData bridge' {
-    $scriptPath = Join-Path $root 'DoBackupST.bat'
-    $content = Get-Content -Raw -LiteralPath $scriptPath
-    $activeLines = @(Get-Content -LiteralPath $scriptPath | Where-Object {
-        $_ -match '\S' -and $_ -notmatch '^\s*(REM\b|::)'
-    })
+    BeforeAll {
+        $root = Split-Path -Parent $PSScriptRoot
+        $scriptPath = Join-Path $root 'DoBackupST.bat'
+        $content = Get-Content -Raw -LiteralPath $scriptPath
+        $activeLines = @(Get-Content -LiteralPath $scriptPath | Where-Object {
+            $_ -match '\S' -and $_ -notmatch '^\s*(REM\b|::)'
+        })
+    }
 
     It 'keeps broad AppData excluded from the Users mirror' {
         $usersLine = @($activeLines | Where-Object { $_ -match '^\s*call backup "\\Users"' })
@@ -46,13 +47,16 @@ Describe 'Legacy ST AppData bridge' {
 }
 
 Describe 'Legacy personal-data profile scope' {
-    $profileScripts = @(
-        'DoBackupGT.bat',
-        'DoBackupHS.bat',
-        'DoBackupMB.bat',
-        'DoBackupST.bat',
-        'DoBackupYA.bat'
-    )
+    BeforeAll {
+        $root = Split-Path -Parent $PSScriptRoot
+        $profileScripts = @(
+            'DoBackupGT.bat',
+            'DoBackupHS.bat',
+            'DoBackupMB.bat',
+            'DoBackupST.bat',
+            'DoBackupYA.bat'
+        )
+    }
 
     foreach ($profileScript in $profileScripts) {
         It "excludes live profile hives in $profileScript" {
@@ -67,8 +71,11 @@ Describe 'Legacy personal-data profile scope' {
 }
 
 Describe 'Legacy Robocopy status propagation' {
-    $wrapper = Get-Content -Raw -LiteralPath (Join-Path $root 'BACKUP.CMD')
-    $orchestrator = Get-Content -Raw -LiteralPath (Join-Path $root 'DoBackup.bat')
+    BeforeAll {
+        $root = Split-Path -Parent $PSScriptRoot
+        $wrapper = Get-Content -Raw -LiteralPath (Join-Path $root 'BACKUP.CMD')
+        $orchestrator = Get-Content -Raw -LiteralPath (Join-Path $root 'DoBackup.bat')
+    }
 
     It 'captures the Robocopy result immediately and classifies code 8 or greater as failure' {
         $wrapper | Should -Match 'robocopy[^\r\n]+\r?\nset "BACKUP_LAST_EXIT=%ERRORLEVEL%"'

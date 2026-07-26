@@ -1,8 +1,10 @@
 . "$PSScriptRoot\PesterAssertionCompatibility.ps1"
 
-$manifestPath = Join-Path $PSScriptRoot '..\src\PSViperBackup\PSViperBackup.psd1'
-
 Describe 'PowerShell module packaging' {
+    BeforeAll {
+        $manifestPath = Join-Path $PSScriptRoot '..\src\PSViperBackup\PSViperBackup.psd1'
+    }
+
     It 'has a valid module manifest' {
         { Test-ModuleManifest -Path $manifestPath -ErrorAction Stop } | Should -Not -Throw
     }
