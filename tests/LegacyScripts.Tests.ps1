@@ -49,16 +49,17 @@ Describe 'Legacy ST AppData bridge' {
 Describe 'Legacy personal-data profile scope' {
     BeforeAll {
         $root = Split-Path -Parent $PSScriptRoot
+        $profileScripts = @(
+            'DoBackupGT.bat',
+            'DoBackupHS.bat',
+            'DoBackupMB.bat',
+            'DoBackupST.bat',
+            'DoBackupYA.bat'
+        )
     }
 
-    foreach ($profileScript in @(
-        'DoBackupGT.bat',
-        'DoBackupHS.bat',
-        'DoBackupMB.bat',
-        'DoBackupST.bat',
-        'DoBackupYA.bat'
-    )) {
-        It "excludes live profile hives in $profileScript" {
+    It 'excludes live profile hives in every profile script' {
+        foreach ($profileScript in $profileScripts) {
             $activeUsersLines = @(Get-Content -LiteralPath (Join-Path $root $profileScript) | Where-Object {
                 $_ -match '^\s*call backup "\\Users"' -and $_ -notmatch '^\s*(REM\b|::)'
             })
