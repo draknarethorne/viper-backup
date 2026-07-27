@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=80"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "viper-backup-quality"
+version = "0.1.0"
+description = "Development quality tooling for the PowerShell viper-backup project"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pre-commit==4.6.1"]
+
+[tool.setuptools]
+py-modules = []
+
+[tool.viper-backup.quality]
+powershell = "5.1"
+psscriptanalyzer = "1.25.0"
+pester-local = "3.4"

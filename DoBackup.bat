@@ -105,4 +105,3 @@ Echo. >> Backup.Log
 
 if "%1" == "" pause
 exit /b %BACKUP_EXIT%
-

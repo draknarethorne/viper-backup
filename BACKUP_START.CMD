@@ -23,4 +23,3 @@ Echo ******************************************************************** >> Bac
 Echo **      Backup Files - %DATE% %TIME%                  **>> Backup_Details.Log
 Echo ******************************************************************** >> Backup_Details.Log
 Echo. >> Backup_Details.Log
-

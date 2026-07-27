@@ -145,6 +145,20 @@ volume serials, user SIDs, or reports containing personal file paths.
 Open `viper-backup.code-workspace` in VS Code. The recommended extension is
 Microsoft PowerShell.
 
+For contribution tooling, install Python 3.12+, the development extra, the Git
+hooks, and PSScriptAnalyzer. Python is used only for repository quality tooling;
+it is not required to operate the PowerShell backup engine.
+
+```powershell
+python -m pip install -e ".[dev]"
+pre-commit install --install-hooks
+Install-Module PSScriptAnalyzer -RequiredVersion 1.25.0 -Scope CurrentUser
+```
+
+Versions are owned by [`pyproject.toml`](pyproject.toml), analyzer policy by
+[`PSScriptAnalyzerSettings.psd1`](PSScriptAnalyzerSettings.psd1), and hook
+orchestration by [`.pre-commit-config.yaml`](.pre-commit-config.yaml).
+
 ## 🚀 Quick Start
 
 Copy `config/backup-plan.example.psd1` to the ignored
@@ -220,6 +234,12 @@ scheduled task.
 The modern engine is validated with Pester 3.4-compatible tests on Windows.
 Tests use temporary paths; the integration case invokes Robocopy only with `/L`.
 CI never accesses real backup volumes or network shares.
+
+GitHub Actions also installs the project-managed quality toolchain, runs file
+hygiene and YAML checks, enforces PowerShell 5.1-compatible PSScriptAnalyzer
+rules, validates the module manifest, and verifies that private runtime state is
+not tracked. Full Pester tests remain CI and pre-push gates rather than slowing
+every commit. See [CONTRIBUTING.md](CONTRIBUTING.md) for direct commands.
 
 ## 🤝 Contributing
 

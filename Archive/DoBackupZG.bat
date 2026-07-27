@@ -27,4 +27,3 @@ REM echo **************************************************
 REM if errorlevel 1 pause
 
 if "%1" == "" pause
-

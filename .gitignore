@@ -20,6 +20,8 @@ local/
 *.p12
 
 # Temporary and editor files
+*.egg-info/
+__pycache__/
 *.tmp
 *.bak
 *.swp
