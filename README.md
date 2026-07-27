@@ -241,6 +241,11 @@ rules, validates the module manifest, and verifies that private runtime state is
 not tracked. Full Pester tests remain CI and pre-push gates rather than slowing
 every commit. See [CONTRIBUTING.md](CONTRIBUTING.md) for direct commands.
 
+Public packaging remains deferred until controlled parallel validation and
+restore drills are complete. See the
+[Release Checklist](docs/RELEASE-CHECKLIST.md) for the package boundary and
+publication gates.
+
 ## 🤝 Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Behavior changes require tests, and any

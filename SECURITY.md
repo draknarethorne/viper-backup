@@ -11,6 +11,10 @@ Do not open a public issue for vulnerabilities, credential exposure, unsafe
 delete behavior, path traversal, destination-identity bypasses, or logs that
 reveal private data.
 
+Use [GitHub private vulnerability reporting](https://github.com/draknarethorne/viper-backup/security/advisories/new)
+when available. If private reporting is unavailable, contact the repository
+owner without including exploit details or private paths in a public issue.
+
 Report privately with:
 
 - a clear description
