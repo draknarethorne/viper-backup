@@ -6,19 +6,35 @@
   ],
   "settings": {
     "files.exclude": {
+      "**/__pycache__": true,
+      "**/.pytest_cache": true,
       "**/state": true,
       "**/local": true,
       "**/*.[lL][oO][gG]": true
     },
     "search.exclude": {
+      "**/__pycache__": true,
+      "**/.pytest_cache": true,
       "**/state": true,
       "**/local": true,
       "**/*.[lL][oO][gG]": true
+    },
+    "files.watcherExclude": {
+      "**/__pycache__/**": true,
+      "**/.pytest_cache/**": true,
+      "**/state/**": true,
+      "**/local/**": true
     },
     "files.associations": {
       "*.psd1": "powershell",
       "*.psm1": "powershell",
       "*.CMD": "bat"
+    },
+    "[python]": {
+      "editor.defaultFormatter": "ms-python.black-formatter"
+    },
+    "[powershell]": {
+      "editor.defaultFormatter": "ms-vscode.powershell"
     },
     "git.enabled": true,
     "git.autofetch": true,
@@ -83,6 +99,9 @@
   },
   "extensions": {
     "recommendations": [
+      "ms-python.python",
+      "ms-python.vscode-pylance",
+      "ms-python.black-formatter",
       "ms-vscode.powershell",
       "davidanson.vscode-markdownlint",
       "streetsidesoftware.code-spell-checker",
